@@ -1,61 +1,169 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Text to Speech Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            color: #333;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 10px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 24px;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        label {
+            font-size: 18px;
+            margin-top: 10px;
+            display: block;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 18px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+        }
+
+        .download-btn {
+            margin-top: 10px;
+            display: none;
+            text-align: center;
+        }
+
+        @media screen and (max-width: 600px) {
+            body {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>Enter Text to Convert to Audio</h1>
-  <textarea id="textInput" rows="4" cols="50"></textarea><br>
-  <select id="voiceSelect">
-    <option value="alloy">Alloy</option>
-    <option value="echo">Echo</option>
-    <option value="fable">Fable</option>
-    <option value="nova" selected>Nova</option>
-    <option value="shimmer">Shimmer</option>
-  </select><br>
-  <button onclick="convertText()">Convert & Play</button>
-  <button id="downloadBtn" style="display:none;" onclick="downloadAudio()">Download Audio</button>
-  <p id="status"></p>
+    <h1>Enter Text to Convert to Audio</h1>
+    <textarea id="textInput" rows="4" placeholder="Type your text here..."></textarea><br>
 
-  <script>
-    async function convertText() {
-      const text = document.getElementById('textInput').value;
-      const voice = document.getElementById('voiceSelect').value;
-      const status = document.getElementById('status');
-      const downloadBtn = document.getElementById('downloadBtn');
-      status.textContent = "Generating audio...";
+    <!-- Voice Selection -->
+    <label for="voiceSelect">Choose Voice:</label>
+    <select id="voiceSelect">
+        <option value="nova">Nova</option>
+        <option value="alloy">Alloy</option>
+        <!-- Add more voice options here -->
+    </select><br>
 
-      // Make the API request to the n8n webhook
-      const response = await fetch("https://hedgehog.app.n8n.cloud/webhook/generate_audio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text_to_convert: text, voice: voice })
-      });
+    <!-- Speed Control Slider -->
+    <label for="speedControl">Speed:</label>
+    <input type="range" id="speedControl" min="0.5" max="2" value="1" step="0.1"><br>
 
-      if (!response.ok) {
-        status.textContent = "Error generating audio.";
-        return;
-      }
+    <!-- Pitch Control Slider -->
+    <label for="pitchControl">Pitch:</label>
+    <input type="range" id="pitchControl" min="0.5" max="2" value="1" step="0.1"><br>
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      // Play the audio
-      const audio = new Audio(audioUrl);
-      audio.play();
-      status.textContent = "Audio is playing!";
+    <button onclick="convertText()">Convert & Play</button>
+    <p id="status"></p>
 
-      // Show the download button
-      downloadBtn.style.display = "inline-block";
-      
-      // Prepare the download link
-      downloadBtn.onclick = () => {
-        const a = document.createElement('a');
-        a.href = audioUrl;
-        a.download = 'audio.mp3';  // You can change the file name here
-        a.click();
-      };
-    }
-  </script>
+    <div class="download-btn" id="downloadBtn">
+        <button onclick="downloadAudio()">Download Audio</button>
+    </div>
+
+    <script>
+        async function convertText() {
+            const text = document.getElementById('textInput').value;
+            const speed = document.getElementById('speedControl').value;  // Get speed value from slider
+            const pitch = document.getElementById('pitchControl').value;  // Get pitch value from slider
+            const selectedVoice = document.getElementById('voiceSelect').value;  // Get selected voice
+            const status = document.getElementById('status');
+            const downloadBtn = document.getElementById('downloadBtn');
+            status.textContent = "Generating audio...";
+
+            // Send the text, speed, pitch, and selected voice to the backend
+            const response = await fetch("https://hedgehog.app.n8n.cloud/webhook/generate_audio", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text_to_convert: text, speed: speed, pitch: pitch, voice: selectedVoice })
+            });
+
+            if (!response.ok) {
+                status.textContent = "Error generating audio.";
+                return;
+            }
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+
+            // Adjust playback speed
+            audio.playbackRate = speed;
+
+            // Play the audio
+            audio.play();
+
+            // Show the download button after audio is generated
+            status.textContent = "Audio is playing!";
+            downloadBtn.style.display = "block";
+
+            // Store audio URL for download
+            downloadBtn.onclick = function() {
+                downloadAudio(audioUrl);
+            };
+        }
+
+        // Function to download the generated audio
+        function downloadAudio(audioUrl) {
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            a.download = 'generated_audio.mp3';  // Name the downloaded file
+            a.click();
+        }
+    </script>
 </body>
 </html>
