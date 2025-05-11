@@ -1,43 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text to Speech Demo</title>
+  <title>Text to Speech Demo</title>
 </head>
 <body>
-    <h1>Enter Text to Convert to Audio</h1>
-    <textarea id="textInput" rows="4" cols="50"></textarea><br>
-    <button onclick="convertText()">Convert & Play</button>
-    <p id="status"></p>
+  <h1>Enter Text to Convert to Audio</h1>
+  <textarea id="textInput" rows="4" cols="50"></textarea><br>
+  <select id="voiceSelect">
+    <option value="alloy">Alloy</option>
+    <option value="echo">Echo</option>
+    <option value="fable">Fable</option>
+    <option value="nova" selected>Nova</option>
+    <option value="shimmer">Shimmer</option>
+  </select><br>
+  <button onclick="convertText()">Convert & Play</button>
+  <button id="downloadBtn" style="display:none;" onclick="downloadAudio()">Download Audio</button>
+  <p id="status"></p>
 
-    <script>
-        async function convertText() {
-            const text = document.getElementById('textInput').value;
-            const status = document.getElementById('status');
-            status.textContent = "Generating audio...";
+  <script>
+    async function convertText() {
+      const text = document.getElementById('textInput').value;
+      const voice = document.getElementById('voiceSelect').value;
+      const status = document.getElementById('status');
+      const downloadBtn = document.getElementById('downloadBtn');
+      status.textContent = "Generating audio...";
 
-            // Make a POST request to your n8n webhook
-            const response = await fetch("https://hedgehog.app.n8n.cloud/webhook/generate_audio", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ text_to_convert: text })
-            });
+      // Make the API request to the n8n webhook
+      const response = await fetch("https://hedgehog.app.n8n.cloud/webhook/generate_audio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text_to_convert: text, voice: voice })
+      });
 
-            if (!response.ok) {
-                status.textContent = "Error generating audio.";
-                return;
-            }
+      if (!response.ok) {
+        status.textContent = "Error generating audio.";
+        return;
+      }
 
-            // Get the audio response and play it
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-            audio.play();
-            status.textContent = "Audio is playing!";
-        }
-    </script>
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Play the audio
+      const audio = new Audio(audioUrl);
+      audio.play();
+      status.textContent = "Audio is playing!";
+
+      // Show the download button
+      downloadBtn.style.display = "inline-block";
+      
+      // Prepare the download link
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = audioUrl;
+        a.download = 'audio.mp3';  // You can change the file name here
+        a.click();
+      };
+    }
+  </script>
 </body>
 </html>
