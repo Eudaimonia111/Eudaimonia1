@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech Demo</title>
+</head>
+<body>
+    <h1>Enter Text to Convert to Audio</h1>
+    <textarea id="textInput" rows="4" cols="50"></textarea><br>
+    <button onclick="convertText()">Convert & Play</button>
+    <p id="status"></p>
+
+    <script>
+        async function convertText() {
+            const text = document.getElementById('textInput').value;
+            const status = document.getElementById('status');
+            status.textContent = "Generating audio...";
+
+            // Make a POST request to your n8n webhook
+            const response = await fetch("https://hedgehog.app.n8n.cloud/webhook/generate_audio", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ text_to_convert: text })
+            });
+
+            if (!response.ok) {
+                status.textContent = "Error generating audio.";
+                return;
+            }
+
+            // Get the audio response and play it
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+            status.textContent = "Audio is playing!";
+        }
+    </script>
+</body>
+</html>
